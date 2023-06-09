@@ -1,4 +1,13 @@
 """
+Análisis de Sentimientos usando Naive Bayes
+-----------------------------------------------------------------------------------------
+
+El archivo `amazon_cells_labelled.txt` contiene una serie de comentarios sobre productos
+de la tienda de amazon, los cuales están etiquetados como positivos (=1) o negativos (=0)
+o indterminados (=NULL). En este taller se construirá un modelo de clasificación usando
+Naive Bayes para determinar el sentimiento de un comentario.
+
+"""
 import numpy as np
 import pandas as pd
 
@@ -7,17 +16,21 @@ def pregunta_01():
     """
     Carga de datos.
     -------------------------------------------------------------------------------------
-  # Lea el archivo `amazon_cells_labelled.tsv` y cree un DataFrame usando pandas.
+    """
+
+    # Lea el archivo `amazon_cells_labelled.tsv` y cree un DataFrame usando pandas.
     # Etiquete la primera columna como `msg` y la segunda como `lbl`. Esta función
     # retorna el dataframe con las dos columnas.
-    df = pd.read_csv("./amazon_cells_labelled.tsv", 
-            sep="\t", 
-            header=None, 
-            names=["msg", "lbl"])
+    df = pd.read_csv(
+        'amazon_cells_labelled.tsv',
+        sep='\t',
+        header=None,
+        names=['msg', 'lbl'],
+    )
 
     # Separe los grupos de mensajes etiquetados y no etiquetados.
-    df_tagged = df[df["lbl"].notnull()]
-    df_untagged = df[df["lbl"].isnull()]
+    df_tagged = df[df["lbl"].notna()]
+    df_untagged = df[df["lbl"].isna()]
 
     x_tagged = df_tagged["msg"]
     y_tagged = df_tagged["lbl"]
@@ -26,7 +39,12 @@ def pregunta_01():
     y_untagged = df_untagged["lbl"]
 
     # Retorne los grupos de mensajes
+
     return x_tagged, y_tagged, x_untagged, y_untagged
+
+
+
+
 
 
 def pregunta_02():
@@ -46,8 +64,8 @@ def pregunta_02():
     x_train, x_test, y_train, y_test = train_test_split(
         x_tagged,
         y_tagged,
-        test_size= 0.1,
-        random_state= 12345,
+        test_size=0.1,
+        random_state=12345,
     )
 
     # Retorne `X_train`, `X_test`, `y_train` y `y_test`
@@ -61,9 +79,8 @@ def pregunta_03():
     """
     # Importe el stemmer de Porter
     # Importe CountVectorizer
-    from nltk.stem import PorterStemmer
+    from nltk.stem.porter import PorterStemmer
     from sklearn.feature_extraction.text import CountVectorizer
-
 
     # Cree un stemeer que use el algoritmo de Porter.
     stemmer = PorterStemmer()
@@ -80,17 +97,18 @@ def pregunta_04():
     Especificación del pipeline y entrenamiento
     -------------------------------------------------------------------------------------
     """
-    from sklearn.feature_extraction.text import CountVectorizer
-    from sklearn.model_selection import GridSearchCV
-    from sklearn.pipeline import Pipeline
-    from sklearn.naive_bayes import BernoulliNB
 
     # Importe CountVetorizer
     # Importe GridSearchCV
     # Importe Pipeline
     # Importe BernoulliNB
+    from sklearn.model_selection import GridSearchCV
+    from sklearn.feature_extraction.text import CountVectorizer
+    from sklearn.pipeline import Pipeline
+    from sklearn.naive_bayes import BernoulliNB
+
     # Cargue las variables.
-    x_train, x_test, y_train, y_test = pregunta_02()
+    x_train, x_test, y_train, y_test= pregunta_02()
 
     # Obtenga el analizador de la pregunta 3.
     analyzer = pregunta_03()
@@ -103,8 +121,8 @@ def pregunta_04():
     countVectorizer = CountVectorizer(
         analyzer=analyzer,
         lowercase=True,
-        stop_words="english",
-        token_pattern="word",
+        stop_words='english',
+        token_pattern=r"(?u)\b\w\w+\b",
         binary=True,
         max_df=1.0,
         min_df=5,
@@ -113,9 +131,8 @@ def pregunta_04():
     # Cree un pipeline que contenga el CountVectorizer y el modelo de BernoulliNB.
     pipeline = Pipeline(
         steps=[
-            ("countVectorizer", countVectorizer),
-            ("BernoulliNB", BernoulliNB()),
-
+            ("count_vectorizer", countVectorizer),
+            ("bernoulli", BernoulliNB()),
         ],
     )
 
@@ -123,7 +140,7 @@ def pregunta_04():
     # considerar 10 valores entre 0.1 y 1.0 para el parámetro alpha de
     # BernoulliNB.
     param_grid = {
-        "BernoulliNB__alpha": np.arange(0.1, 1.1, 0.1),
+        "bernoulli__alpha": np.arange(0.1,1.1,0.1),
     }
 
     # Defina una instancia de GridSearchCV con el pipeline y el diccionario de
@@ -132,7 +149,9 @@ def pregunta_04():
         estimator=pipeline,
         param_grid=param_grid,
         cv=5,
-        scoring="accuracy",
+        scoring='accuracy',
+        refit=True,
+        return_train_score=False,
     )
 
     # Búsque la mejor combinación de regresores
@@ -140,6 +159,7 @@ def pregunta_04():
 
     # Retorne el mejor modelo
     return gridSearchCV
+
 
 def pregunta_05():
     """
@@ -181,11 +201,11 @@ def pregunta_06():
     gridSearchCV = pregunta_04()
 
     # Cargue los datos generados en la pregunta 01.
-    x_tagged, y_tagged, x_untagged, y_untagged = pregunta_01()
+    _, _, X_untagged, _ = pregunta_01()
 
     # pronostique la polaridad del sentimiento para los datos
     # no etiquetados
-    y_untagged_pred = gridSearchCV.predict(x_untagged)
+    y_untagged_pred = gridSearchCV.predict(X_untagged)
 
     # Retorne el vector de predicciones
     return y_untagged_pred
